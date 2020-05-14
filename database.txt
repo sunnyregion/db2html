@@ -1,0 +1,14 @@
+[map[Table:sunny_editor Create Table:CREATE TABLE `sunny_editor` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '编辑id',
+  `username` varchar(20) NOT NULL COMMENT '编辑名称',
+  `password` varchar(32) NOT NULL COMMENT '密码，使用md5',
+  `power` varchar(50) NOT NULL DEFAULT '' COMMENT '权限，对那些频道有创建、编辑、删除、修改权限',
+  `description` varchar(500) DEFAULT NULL COMMENT '描述',
+  `avatar` varchar(255) DEFAULT NULL COMMENT '头像',
+  `status` int(11) NOT NULL DEFAULT '1' COMMENT '状态：0为已删除，1为可用',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=utf8 COMMENT='编辑表']]
+[map[Type:int(11) Null:NO Key:PRI Default:<nil> Extra:auto_increment Field:id] 
+map[Null:NO Key: Default:<nil> Extra: Field:username Type:varchar(20)] 
+map[Default:<nil> Extra: Field:password Type:varchar(32) Null:NO Key:]
+map[Field:power Type:varchar(50) Null:NO Key: Default: Extra:] map[Type:varchar(500) Null:YES Key: Default:<nil> Extra: Field:description] map[Extra: Field:avatar Type:varchar(255) Null:YES Key: Default:<nil>] map[Null:NO Key: Default:1 Extra: Field:status Type:int(11)]]
