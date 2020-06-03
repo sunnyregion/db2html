@@ -3,6 +3,7 @@ package main //package名称，主运行的package名规定为main
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"strings"
 
 	//	"time"
@@ -26,6 +27,7 @@ var (
 	db        *sql.DB
 	bFlag     = flag.Bool("b", false, "是否有数据库配置文件,默认配置文件是config.ini。")
 	pFlag     = flag.Bool("p", false, "是否打印出显示信息。")
+	mFlag     = flag.Bool("m", false, "是否保存为MarkDown文件。")
 	oFileName = flag.String("o", "README.html", "输出的文件名。")
 )
 
@@ -37,6 +39,7 @@ func checkErr(err error) {
 	}
 }
 
+//ResultStruct 返回结果struct
 type ResultStruct struct {
 	Field   string //字段名
 	Type    string //类型
@@ -46,6 +49,8 @@ type ResultStruct struct {
 	Extra   string //额外
 	Comment string //备注
 }
+
+//TablesList 表名
 type TablesList struct {
 	Name string
 }
@@ -56,6 +61,9 @@ func init() {
 	flag.Parse()
 	if *bFlag {
 		getIni()
+	} else {
+		fmt.Println("🎉🎉🎉👍💁👌========>>", `没有数据库参数`, "<<=======⚽🎍😍🎉🎉🎉")
+		os.Exit(0)
 	}
 	var err error
 	strSQL := dbusername + `:` + dbpassword + `@tcp(` + dbhostsip + `:` + port + `)/` + dbname + `?charset=utf8`
@@ -70,25 +78,15 @@ func init() {
 	//	fmt.Printf("数据库连接成功！%s\n", strSQL)
 }
 
-// 取得ini文件mysql的配置
+//getIni  取得ini文件mysql的配置
 func getIni() {
 	f := sunnyini.NewIniFile()
 	f.Readfile("config.ini")
 	// 获取所有的Section
 	_ = f.GetSection()
-	//	fmt.Println("There are:", len(section), "section")
-	//	for i, v := range section {
-	//		fmt.Println("The index of", i, "section:", v)
-	//	}
 	// 获取某一个section下的键值对
 	describ, v := f.GetValue("mysql")
 	if describ == "" { // 有数据
-		//		for _, value := range v {
-		//			//			for k, v := range value {
-		//			//				fmt.Println("The key is:", k, "and the value is:", v)
-		//			//			}
-		//			fmt.Println(value)
-		//		}
 		dbhostsip = v[0]["dbhostsip"] //IP地址
 		port = v[1]["port"]
 		dbusername = v[2]["dbusername"] //用户名
@@ -99,8 +97,7 @@ func getIni() {
 	}
 }
 
-//
-//取得表名列表
+//GetTablesName 取得表名列表
 func GetTablesName() []string {
 
 	dbmap := &gorp.DbMap{Db: db, Dialect: gorp.MySQLDialect{"InnoDB", "UTF8"}}
@@ -119,7 +116,7 @@ func GetTablesName() []string {
 	return tables
 }
 
-//使用单线程的方式读取表信息
+//getFieldsInfo 使用单线程的方式读取表信息
 func getFieldsInfo(tables []string) {
 	o := orm.NewOrm()
 	var strTmp string
@@ -191,9 +188,16 @@ func getFieldsInfo(tables []string) {
 		if *pFlag {
 			table.OutputA(tStruct)
 		}
+		if *mFlag {
+
+			for k, v := range tStruct {
+				fmt.Printf("k:=%v===v:%v\r\n", k, v)
+			}
+		}
 	}
 }
 
+//getFieldInfoByChan 使用多线程
 func getFieldInfoByChan(ch chan string) {
 	o := orm.NewOrm()
 	var (
@@ -267,19 +271,23 @@ func getFieldInfoByChan(ch chan string) {
 
 //主函数
 func main() {
-	c := color.New(color.FgCyan).Add(color.Underline)
-	c.Println(`____________   _____       _   _ ________  ___ _     
-|  _  \ ___ \ |_   _|     | | | |_   _|  \/  || |    
-| | | | |_/ /   | | ___   | |_| | | | | .  . || |    
-| | | | ___ \   | |/ _ \  |  _  | | | | |\/| || |    
-| |/ /| |_/ /   | | (_) | | | | | | | | |  | || |____
-|___/ \____/    \_/\___/  \_| |_/ \_/ \_|  |_/\_____/
-                                              
+	//c := color.New(color.FgCyan).Add(color.Underline)
+	fmt.Println(`
+	_____  ____    ___    _    _ _______ __  __ _      
+	|  __ \|  _ \  |__ \  | |  | |__   __|  \/  | |     
+	| |  | | |_) |    ) | | |__| |  | |  | \  / | |     
+	| |  | |  _ <    / /  |  __  |  | |  | |\/| | |     
+	| |__| | |_) |  / /_  | |  | |  | |  | |  | | |____ 
+	|_____/|____/  |____| |_|  |_|  |_|  |_|  |_|______
 `)
-	//	c.DisableColor()
-	//	fmt.Println("Mr. Watson, Come Here, I Want You! \r\n 沃特森先生,过来，我想见你！") //March 10, 1876: ‘Mr. Watson, Come Here … ‘
 	tables := GetTablesName()
+	fmt.Println(tables)
+	// if *mFlag {
+	// 	fmt.Println("🎉🎉🎉👍💁👌========>>", `输出MarkDown`, "<<=======⚽🎍😍🎉🎉🎉")
+	// } else {
 	getFieldsInfo(tables)
+	// }
+
 	// 下面是多线程的方法
 	//	ch := make(chan string, len(tables))
 	//	for _, tname := range tables {
