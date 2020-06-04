@@ -10,4 +10,5 @@ require (
 	github.com/modood/table v0.0.0-20200225102042-88de94bb9876
 	github.com/sunnyregion/color v1.0.0
 	github.com/sunnyregion/sunnyini v0.0.2
+	github.com/sunnyregion/util v0.0.0-20200107012254-c408d62c939b
 )

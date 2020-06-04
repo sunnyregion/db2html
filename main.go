@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	//	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/modood/table"
 	"github.com/sunnyregion/color"
 	"github.com/sunnyregion/sunnyini"
+	SunnyUTIL "github.com/sunnyregion/util"
 )
 
 var (
@@ -23,11 +25,12 @@ var (
 	dbusername = "dfdba"   //用户名
 	dbpassword = "Dt1210k" //密码
 	dbname     = "dface"   //表名
+	mdFilename string      //MarkDown文件
 
 	db        *sql.DB
 	bFlag     = flag.Bool("b", false, "是否有数据库配置文件,默认配置文件是config.ini。")
 	pFlag     = flag.Bool("p", false, "是否打印出显示信息。")
-	mFlag     = flag.Bool("m", false, "是否保存为MarkDown文件。")
+	mFlag     = flag.Bool("m", false, "是否保存为MarkDown文件，默认文件名dbname.md。")
 	oFileName = flag.String("o", "README.html", "输出的文件名。")
 )
 
@@ -74,6 +77,7 @@ func init() {
 	orm.RegisterDriver("mysql", orm.DRMySQL)
 
 	orm.RegisterDataBase("default", "mysql", strSQL)
+	mdFilename = dbname + `.md`
 
 	//	fmt.Printf("数据库连接成功！%s\n", strSQL)
 }
@@ -118,24 +122,40 @@ func GetTablesName() []string {
 
 //getFieldsInfo 使用单线程的方式读取表信息
 func getFieldsInfo(tables []string) {
+	mdFile, _ := os.OpenFile(mdFilename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	defer mdFile.Close()
 	o := orm.NewOrm()
-	var strTmp string
-	for _, tname := range tables {
+	var strTmp, sMD string
+	for iTable, tname := range tables {
 		var results []orm.Params
 		var rsStruct ResultStruct
 		_, err := o.Raw(fmt.Sprintf("show create table %s", tname)).Values(&results)
 		if err != nil {
 			fmt.Println(err)
 		}
-		strTmp = results[0][`Create Table`].(string)
+		var ok bool
+		strTmp, ok = results[0][`Create Table`].(string)
+		if !ok {
+			continue
+		}
+		//strTmp = results[0][`Create Table`].(string)
 
 		comIndex := strings.Index(strTmp, `COMMENT=`)
 		c := color.New(color.FgMagenta).Add(color.Underline)
 		if *pFlag {
+			if iTable > 0 {
+				mdFile.WriteString(`<div style="page-break-after: always;"></div>
+<div style="page-break-after: always;"></div>`)
+				mdFile.WriteString("\r\n")
+			}
 			fmt.Println("")
 			if comIndex != -1 {
+				sMD = SunnyUTIL.SunnyStrJoin(`## `, tname, "::", strTmp[comIndex+9:len(strTmp)-1], "\r\n")
+				mdFile.WriteString(sMD)
 				c.Println("-------------表名:", tname, strTmp[comIndex+9:len(strTmp)-1], "-----------")
 			} else {
+				sMD = SunnyUTIL.SunnyStrJoin(`## `, tname, "::", "\r\n")
+				mdFile.WriteString(sMD)
 				c.Println("-------------表名:", tname, "-----------")
 			}
 			c = color.New(color.FgCyan).Add(color.Underline)
@@ -189,10 +209,15 @@ func getFieldsInfo(tables []string) {
 			table.OutputA(tStruct)
 		}
 		if *mFlag {
+			strMD := SunnyUTIL.SunnyStrJoin(`|No.|`, `Field `, `|`, `Type`, `|`, `Null`, `|`, `Key`, `|`, `Default`, `|`, `Extra`, `|`, `Comment`, `|`, "\r\n")
+			strMD = SunnyUTIL.SunnyStrJoin(strMD, `|:--|:---|:---|:---|:---|:---|:---|:---|`, "\r\n")
 
 			for k, v := range tStruct {
-				fmt.Printf("k:=%v===v:%v\r\n", k, v)
+				//fmt.Printf("k:=%v===v:%v---------%v\r\n", k, v, v.Field)
+				strMD = SunnyUTIL.SunnyStrJoin(strMD, "|", strconv.Itoa(k+1), "|", v.Field, `|`, v.Type, `|`, v.Null, `|`, v.Key, `|`, v.Default, `|`, v.Extra, `|`, v.Comment, `|`, "\r\n")
 			}
+			mdFile.WriteString(strMD)
+			fmt.Println(strMD)
 		}
 	}
 }
